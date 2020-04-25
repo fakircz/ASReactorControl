@@ -10,8 +10,7 @@ local FissionReactor = {}
 -------------------------------------------------
 -- FissionReactor class
 -------------------------------------------------
--- Default settings can be edited in the constructor 
--- method.
+-- Default settings can be edited inside the constructor method.
 
 FissionReactor.new = function(tp_addr, rs_addr)
   local self = {}
@@ -103,9 +102,9 @@ FissionReactor.new = function(tp_addr, rs_addr)
     return stack.name == fuelId and stack.size >= count
   end
   
-  -- Check all populated stacks in row (breaks on a first empty slot - this MAY be fixed some day)
+  -- Checks all populated stacks in row (breaks on a first empty slot - this MAY be fixed some day)
   -- to see if the item is a fuel rod and if it is NOT a fully spent rod.
-  -- If so, insert the slot number to a list along with the amount if rods in that slot.
+  -- If so, insert the slot number to a list along with the amount of rods in that slot.
   local function getPartiallySpentRodStacks()
     local psStacks = {}
     local currentStack
@@ -115,7 +114,7 @@ FissionReactor.new = function(tp_addr, rs_addr)
       currentStack = tp.getStackInSlot(tpSides.spent, slot)
       if currentStack ~= nil then
         if currentStack.name == fuelId and not
-        tp.compareStackToDatabase(tpSides.spent, slot, db.address, dbSpentSlot, true) then
+              tp.compareStackToDatabase(tpSides.spent, slot, db.address, dbSpentSlot, true) then
           table.insert(psStacks, {size = currentStack.size, slot = slot})
         end
       end
