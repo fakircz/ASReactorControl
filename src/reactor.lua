@@ -1,24 +1,53 @@
+--- Atomic Science Fission Reactor OC driver ----
+-------------------------------------------------
+-- version 1.0
+-- by Fakir
+
 local component = require("component")
 local sides = require("sides")
-
 local FissionReactor = {}
+
+-------------------------------------------------
+-- FissionReactor class
+-------------------------------------------------
+-- Default settings can be edited in the constructor 
+-- method.
 
 FissionReactor.new = function(tp_addr, rs_addr)
   local self = {}
 
+  -- ID of the fuel cell item
   local fuelId = "atomicscience:fissile_fuel_cell"
+
+  -- Address of a database. Can be set explicitly using
+  -- component.proxy(component.get(uuid_part)).
   local db = component.database
+
+  -- Database slot containing a fully spent fuel cell
   local dbSpentSlot = 1
+
+  -- Interface slot containing fresh fuel cells
   local interfaceFuelSlot = 1
+
+  -- Maximum fuel rods that can be inserted into the reactor
   local maxFuelRods = 10
+
+  -- Number of currently inserted rods.
   local rodsInside = 0
-  local spentRemovalEnabled = false
+
+  -- In case of manual reactor shutdown, partially spent rods
+  -- will appear in the output inventory. When the reactor is
+  -- restarted, the system will search for these rods and insert
+  -- them first. Enabled by default.
   local usePartiallySpentRods = true
   
+  -- Tracks the state of the output retriever for fully spent cells
+  local spentRemovalEnabled = false
+
   local tp = component.proxy(component.get(tp_addr))
   local rs = component.proxy(component.get(rs_addr))
   
-  --  Transposer side definitions
+  -- Transposer side definitions
   local tpSides = {
     reactor = sides.west,
     iface = sides.south,
@@ -31,6 +60,16 @@ FissionReactor.new = function(tp_addr, rs_addr)
     all = sides.up
   }
   
+  -- Resets the Redstone I/O for normal operation
+  self.resetSpentFuelRetrieval()
+
+  -- Enables the user to configure different sides for the Transposer and Redstone components.
+  -- Parameters: 
+  --   Transposer - reactor side 
+  --   Transposer - spent fuel side 
+  --   Transposer - ME interface side 
+  --   Redstone - normal output (fully spent) side 
+  --   Redstone - extract-all side 
   function self.configureComponentSides(tp_reactor_side, tp_spent_side, tp_iface_side, rs_norm_side, rs_all_side)
     tpSides.reactor = tp_reactor_side
     tpSides.spent = tp_spent_side
@@ -39,7 +78,7 @@ FissionReactor.new = function(tp_addr, rs_addr)
     rsSides.all = rs_all_side
   end
 
-  function self.getAddresses()
+  function self.getAddress()
     return tp.address, rs.address
   end
   
@@ -51,6 +90,7 @@ FissionReactor.new = function(tp_addr, rs_addr)
     return rodsInside
   end
   
+  -- will most likely be deprecated, TBD 
   function self.setMaxFuelRods(newValue)
     maxFuelRods = newValue
     return maxFuelRods
@@ -66,8 +106,8 @@ FissionReactor.new = function(tp_addr, rs_addr)
     local currentStack
     local slot = 1
     
-    -- Check all populated stacks in row (breaks on a first empty slot) to see
-    -- if the item is a fuel rod and if it is NOT a fully spent rod.
+    -- Check all populated stacks in row (breaks on a first empty slot - this MAY be fixed some day)
+    -- to see if the item is a fuel rod and if it is NOT a fully spent rod.
     -- If so, insert the slot number to a list along with the amount if rods in that slot.
     repeat
       currentStack = tp.getStackInSlot(tpSides.spent, slot)
@@ -82,10 +122,13 @@ FissionReactor.new = function(tp_addr, rs_addr)
     return psStacks
   end
 
+  -- Inserts rods into the reactor. Any amount up to maxFuelRods
+  -- can be inserted, the power output will be proportional.
   function self.insertRods(count)
     if count > maxFuelRods then
       count = maxFuelRods
     end
+
     -- Use partially spent rods first if enabled and available
     local lastInventorySlot = 1
   
@@ -113,13 +156,22 @@ FissionReactor.new = function(tp_addr, rs_addr)
     end
   end
 
-  function self.enableSpentFuelRemoval()
+  -- Enables the retriever set to extract fully spent rods.
+  local function enableSpentFuelRemoval()
     if not spentRemovalEnabled then
       rs.setOutput(rsSides.normal, 15)
       spentRemovalEnabled = true
     end
   end
+  
+  -- Resets the reactor to standard spent rod retrieval mode.
+  function self.resetSpentFuelRetrieval()
+    rs.setOutput(rsSides.all, 0)
+    os.sleep(0.2)
+    enableSpentFuelRemoval()
+  end
 
+  -- Disables the retriever set to extract fully spent rods.
   function self.disableSpentFuelRemoval()
     if spentRemovalEnabled then
       rs.setOutput(rsSides.normal, 0)
@@ -134,10 +186,7 @@ FissionReactor.new = function(tp_addr, rs_addr)
     rs.setOutput(rsSides.all, 15)
   end
 
-  function self.resetReactor( ... )
-    -- body
-  end
-  -- Poll the chest for spent rods, and if found, dump them to AE network and update the rod count.
+  -- Check the chest for spent rods, and if found, dump them to AE network and update the rod count.
   -- This needs to be ran periodically until a better way of detection is found.
   function self.handleSpentFuelRods()
     if tp.compareStackToDatabase(tpSides.spent, 1, db.address, dbSpentSlot, true) then
@@ -148,4 +197,5 @@ FissionReactor.new = function(tp_addr, rs_addr)
 
   return self
 end
+
 return FissionReactor
