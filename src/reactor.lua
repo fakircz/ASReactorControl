@@ -103,14 +103,14 @@ FissionReactor.new = function(tp_addr, rs_addr)
     return stack.name == fuelId and stack.size >= count
   end
   
+  -- Check all populated stacks in row (breaks on a first empty slot - this MAY be fixed some day)
+  -- to see if the item is a fuel rod and if it is NOT a fully spent rod.
+  -- If so, insert the slot number to a list along with the amount if rods in that slot.
   local function getPartiallySpentRodStacks()
     local psStacks = {}
     local currentStack
     local slot = 1
     
-    -- Check all populated stacks in row (breaks on a first empty slot - this MAY be fixed some day)
-    -- to see if the item is a fuel rod and if it is NOT a fully spent rod.
-    -- If so, insert the slot number to a list along with the amount if rods in that slot.
     repeat
       currentStack = tp.getStackInSlot(tpSides.spent, slot)
       if currentStack ~= nil then
