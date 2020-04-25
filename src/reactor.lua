@@ -60,8 +60,10 @@ FissionReactor.new = function(tp_addr, rs_addr)
     all = sides.up
   }
   
-  -- Resets the Redstone I/O for normal operation
-  self.resetSpentFuelRetrieval()
+  -- Resets the Redstone I/O to all off
+  for side = 0, 5 do
+    rs.setOutput(side, 0)
+  end
 
   -- Enables the user to configure different sides for the Transposer and Redstone components.
   -- Parameters: 
