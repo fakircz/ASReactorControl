@@ -35,7 +35,8 @@ end
 
 function loadfuel(rods)
   if isControllerRunning then
-    rodsToInser = rods
+    rodsToInsert = rods
+    print("Setting the controller to load " .. rods .. " into each reactor.")
   else
     print("The controller is not running.")
   end
@@ -45,7 +46,7 @@ function fuelTimerEventHandler()
   for _, r in ipairs(reactors) do
     r.handleSpentFuelRods()
     if rodsToInsert > 0 then
-      
+      r.insertRods(rodsToInsert - r.getRodsInReactor())
     end
   end
 end
