@@ -166,7 +166,7 @@ FissionReactor.new = function(tp_addr, rs_addr)
   end
   
   -- Resets the reactor to standard spent rod retrieval mode.
-  function self.resetSpentFuelRetrieval()
+  function self.resetSpentFuelRemoval()
     rs.setOutput(rsSides.all, 0)
     os.sleep(0.2)
     enableSpentFuelRemoval()
